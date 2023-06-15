@@ -102,13 +102,13 @@ function startApp(token) {
     player.addListener("authentication_error", message => handleError(message, true));
     player.addListener("account_error", message => handleError(message));
     player.addListener("playback_error", message => handleError(message));
+    player.addListener("player_state_changed", state => updateSongInfo(state));
+    player.addListener("not_ready", device_id => console.log("Device ID has gone offline", device_id));
     player.addListener("ready", device_id => {
         console.log("Ready with Device ID", device_id);
         loading.style.display = "none";
         app.style.display = "grid";
     });
-    player.addListener("not_ready", device_id => console.log("Device ID has gone offline", device_id));
-    player.addListener("player_state_changed", state => updateSongInfo(state));
 
     player.connect();
 }
@@ -150,7 +150,9 @@ function updateSongInfo(state) {
 
         // If there is no music, hide the pause icon and remove the grey overlay
         pauseIcon.style.display = "none";
-        body.style.opacity = 1; // keep app at full opacity when not playing
+
+        // Keep app at full opacity when not playing
+        body.style.opacity = 1;
     }
 }
 
@@ -179,7 +181,7 @@ function startPlaying(code) {
                 return;
             }
 
-            // Remove the code from the window to prevent an infinite loop
+            // Remove the code search parameter from the uri to prevent an infinite loop (code -> token -> code -> token -> ...)
             window.location.replace(redirectUri);
 
             // Cache the token in localStorage for later use
@@ -191,7 +193,7 @@ function startPlaying(code) {
         .catch(error => handleError(`Failed to exchange code for token: ${error}`, true));
 }
 
-window.onSpotifyWebPlaybackSDKReady = async function() {
+window.onSpotifyWebPlaybackSDKReady = function() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
     if(code) {
