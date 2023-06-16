@@ -86,11 +86,95 @@ async function login() {
         redirect_uri: redirectUri,
         code_challenge_method: 'S256',
         code_challenge: codeChallenge,
-        state: state  // Include the state value in the authorization request
+        state: state,  // Include the state value in the authorization request
+        show_dialog: false
     });
 
     // Redirect to Spotify login page
     window.location.href = `https://accounts.spotify.com/authorize?${params}`;
+}
+
+/**
+ * Initiates playing after receiving the authorization code.
+ * @param {string} code - The authorization code.
+ * @param {string} state - The state value.
+ */
+function startPlaying(code, state) {
+    // Validate the returned state value
+    const storedState = localStorage.getItem("oauth_state");
+    if(state !== storedState) {
+        handleError("Invalid state returned from OAuth authorization.", true);
+        return;
+    }
+
+    // We have an authorization code, now we need to exchange it for an access token
+    const codeVerifier = localStorage.getItem("pkce_code_verifier");
+    fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+            grant_type: "authorization_code",
+            code: code,
+            redirect_uri: redirectUri,
+            code_verifier: codeVerifier,
+            client_id: clientId
+        }).toString()
+    })
+        .then(response => response.json())
+        .then(data => {
+            if(data.error) {
+                handleError(`Failed to exchange code for token: ${data.error}`, true);
+                return;
+            }
+
+            // Remove the code search parameter from the uri to prevent an infinite loop (code -> token -> code -> token -> ...)
+            window.location.replace(redirectUri);
+
+            // Cache the token in localStorage for later use
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("refresh_token", data.refresh_token);
+            localStorage.setItem("token_expires_in", data.expires_in);
+            localStorage.setItem("token_expires_at", new Date().getTime() + data.expires_in * 1000);
+
+            // We have the access token, now we can start the app
+            startApp(data.access_token);
+        })
+        .catch(error => handleError(`Failed to exchange code for token: ${error}`, true));
+}
+
+/**
+ * Refreshes the access token using the refresh token.
+ * @returns {Promise<string>} A promise that resolves to the new access token.
+ */
+async function refreshToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    const params = new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: clientId
+    });
+
+    try {
+        const response = await fetch("https://accounts.spotify.com/api/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString()
+        });
+        const data = await response.json();
+        if(data.error) {
+            handleError(`Failed to refresh token: ${data.error}`, true);
+            throw new Error(`Failed to refresh token: ${data.error}`);
+        }
+
+        // Update the token information in localStorage
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("token_expires_in", data.expires_in);
+        localStorage.setItem("token_expires_at", new Date().getTime() + data.expires_in * 1000);
+        return data.access_token;
+    } catch(error) {
+        handleError(`Failed to refresh token: ${error}`, true);
+        throw error;
+    }
 }
 
 /**
@@ -100,7 +184,24 @@ async function login() {
 function startApp(token) {
     const player = new Spotify.Player({
         name: "OBS Spotify Player",
-        getOAuthToken: cb => cb(token)
+        getOAuthToken: async cb => {
+            const tokenExpiresAt = parseInt(localStorage.getItem("token_expires_at"));
+            const currentTime = new Date().getTime();
+
+            if(currentTime < tokenExpiresAt - 30000) {
+                // Token is valid for more than 30 seconds, use the current token
+                cb(token);
+            } else {
+                try {
+                    // Token is about to expire, refresh it
+                    const newToken = await refreshToken();
+                    cb(newToken);
+                } catch(error) {
+                    // Handle token refresh error
+                    handleError("Failed to refresh access token.", true);
+                }
+            }
+        }
     });
 
     player.addListener("initialization_error", message => handleError(message, true));
@@ -162,51 +263,6 @@ function updateSongInfo(state) {
         pauseIcon.style.display = "none";
         body.classList.replace("fade-out", "fade-in");
     }
-}
-
-/**
- * Initiates playing after receiving the authorization code.
- * @param {string} code - The authorization code.
- * @param {string} state - The state value.
- */
-function startPlaying(code, state) {
-    // Validate the returned state value
-    const storedState = localStorage.getItem("oauth_state");
-    if(state !== storedState) {
-        handleError("Invalid state returned from OAuth authorization.", true);
-        return;
-    }
-
-    // We have an authorization code, now we need to exchange it for an access token
-    const codeVerifier = localStorage.getItem("pkce_code_verifier");
-    fetch("https://accounts.spotify.com/api/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-            grant_type: "authorization_code",
-            code: code,
-            redirect_uri: redirectUri,
-            code_verifier: codeVerifier,
-            client_id: clientId
-        }).toString()
-    })
-        .then(response => response.json())
-        .then(data => {
-            if(data.error) {
-                handleError(`Failed to exchange code for token: ${data.error}`, true);
-                return;
-            }
-
-            // Remove the code search parameter from the uri to prevent an infinite loop (code -> token -> code -> token -> ...)
-            window.location.replace(redirectUri);
-
-            // Cache the token in localStorage for later use
-            localStorage.setItem("access_token", data.access_token);
-
-            // We have the access token, now we can start the app
-            startApp(data.access_token);
-        })
-        .catch(error => handleError(`Failed to exchange code for token: ${error}`, true));
 }
 
 window.onSpotifyWebPlaybackSDKReady = function() {
