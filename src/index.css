@@ -10,6 +10,12 @@ html {
     opacity: 1;
 }
 
+html:hover,
+body:hover {
+    transition: opacity 2.5s ease-in-out;
+    opacity: 1;
+}
+
 #app {
     display: grid;
     grid-template-columns: 35% 65%;
