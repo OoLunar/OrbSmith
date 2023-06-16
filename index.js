@@ -120,27 +120,32 @@ function startApp(token) {
 function updateSongInfo(state) {
     if(state) {
         const { current_track: currentTrack } = state.track_window;
-        state.paused = state.paused;
-
-        if(state.paused) {
-            // If the music is paused, show the pause icon and grey out the cover art
-            body.style.opacity = 1;
-            coverArt.classList.add("paused");
-            pauseIcon.style.display = "block";
-            setTimeout(() => body.style.opacity = 0, 7500);
-        } else {
-            // If the music is playing, hide the pause icon and remove the grey overlay
-            coverArt.classList.remove("paused");
-            pauseIcon.style.display = "none";
-            body.style.opacity = 1;
-            setTimeout(() => body.style.opacity = 0, 5000);
-        }
 
         document.title = `Spotify: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
         coverArt.src = currentTrack.album.images[0].url;
         songTitle.innerText = `Song: ${currentTrack.name}`;
         songArtist.innerText = `Artist: ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
         songAlbum.innerText = currentTrack.album.name !== currentTrack.name ? `Album: ${currentTrack.album.name}` : "";
+
+        if(state.paused) {
+            // If the music is paused, show the pause icon and grey out the cover art
+            body.classList.replace("fade-out", "fade-in");
+            coverArt.classList.add("paused");
+            pauseIcon.style.display = "block";
+        } else {
+            // If the music is playing, hide the pause icon and remove the grey overlay
+            pauseIcon.style.display = "none";
+            coverArt.classList.remove("paused");
+
+            // If the song is just starting, fade in the cover art
+            if(state.position === 0) {
+                body.classList.replace("fade-out", "fade-in");
+                setTimeout(() => body.classList.replace("fade-in", "fade-out"), 5000);
+            } else {
+                // Otherwise, fade out the cover art
+                body.classList.replace("fade-in", "fade-out");
+            }
+        }
     } else {
         document.title = "Spotify: Not Playing";
         coverArt.src = "res/spotify.png";
@@ -150,9 +155,7 @@ function updateSongInfo(state) {
 
         // If there is no music, hide the pause icon and remove the grey overlay
         pauseIcon.style.display = "none";
-
-        // Keep app at full opacity when not playing
-        body.style.opacity = 1;
+        body.classList.replace("fade-out", "fade-in");
     }
 }
 
