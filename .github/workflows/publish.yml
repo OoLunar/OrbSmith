@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    name: "Publish Website"
+    name: "Prepare Website"
     runs-on: self-hosted
     steps:
       - name: Checkout
@@ -26,6 +26,8 @@ jobs:
         with:
           path: build/
   deploy:
+    name: "Publish Website"
+    needs: build
     runs-on: self-hosted
     permissions:
       pages: write      # to deploy to Pages
