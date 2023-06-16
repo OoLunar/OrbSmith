@@ -75,13 +75,18 @@ async function login() {
     const codeChallenge = await sha256(codeVerifier).then(buffer => base64UrlEncode(buffer));
     localStorage.setItem("pkce_code_verifier", codeVerifier);
 
+    // Generate a random state value
+    const state = generateRandomString();
+    localStorage.setItem("oauth_state", state);
+
     const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
         scope: "streaming user-read-email user-read-private",
         redirect_uri: redirectUri,
         code_challenge_method: 'S256',
-        code_challenge: codeChallenge
+        code_challenge: codeChallenge,
+        state: state  // Include the state value in the authorization request
     });
 
     // Redirect to Spotify login page
@@ -162,8 +167,16 @@ function updateSongInfo(state) {
 /**
  * Initiates playing after receiving the authorization code.
  * @param {string} code - The authorization code.
+ * @param {string} state - The state value.
  */
-function startPlaying(code) {
+function startPlaying(code, state) {
+    // Validate the returned state value
+    const storedState = localStorage.getItem("oauth_state");
+    if(state !== storedState) {
+        handleError("Invalid state returned from OAuth authorization.", true);
+        return;
+    }
+
     // We have an authorization code, now we need to exchange it for an access token
     const codeVerifier = localStorage.getItem("pkce_code_verifier");
     fetch("https://accounts.spotify.com/api/token", {
@@ -199,8 +212,9 @@ function startPlaying(code) {
 window.onSpotifyWebPlaybackSDKReady = function() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
+    const state = urlParams.get("state");
     if(code) {
-        startPlaying(code);
+        startPlaying(code, state);
     } else {
         const cachedToken = localStorage.getItem("access_token");
         if(cachedToken) {
