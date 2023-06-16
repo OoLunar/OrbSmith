@@ -183,7 +183,7 @@ async function refreshToken() {
  */
 function startApp(token) {
     const player = new Spotify.Player({
-        name: "OBS Spotify Player",
+        name: "OrbSmith: Stream Overlay",
         getOAuthToken: async cb => {
             const tokenExpiresAt = parseInt(localStorage.getItem("token_expires_at"));
             const currentTime = new Date().getTime();
