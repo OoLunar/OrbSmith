@@ -227,7 +227,7 @@ function updateSongInfo(state) {
     if(state) {
         const { current_track: currentTrack } = state.track_window;
 
-        document.title = `Spotify: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
+        document.title = `OrbSmith: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
         coverArt.src = currentTrack.album.images[0].url;
         songTitle.innerText = `Song: ${currentTrack.name}`;
         songArtist.innerText = `Artist: ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
@@ -253,7 +253,7 @@ function updateSongInfo(state) {
             }
         }
     } else {
-        document.title = "Spotify: Not Playing";
+        document.title = "OrbSmith: Not Playing";
         coverArt.src = "res/spotify.png";
         songTitle.innerText = "Song: Not Playing";
         songArtist.innerText = "Artist: Not Playing";

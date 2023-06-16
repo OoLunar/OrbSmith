@@ -96,6 +96,19 @@ body:hover {
     display: none;
 }
 
+#spotify-logo {
+    width: 32px;
+    height: 32px;
+    margin: 20px;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: #12121270;
+    padding: 2px;
+    border: transparent 5px solid;
+    border-radius: 5px;
+}
+
 .fade-out {
     opacity: 0;
     transition: opacity 2.5s ease-in-out 15s;
