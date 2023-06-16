@@ -1,0 +1,40 @@
+name: Publish Website
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: "Publish Website"
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Optimize Images
+        run: tools/optimize.sh
+      - name: Prepare Files
+        run: mkdir build && mv src/ res/ build/
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: build/
+  deploy:
+    runs-on: self-hosted
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
+    # Deploy to the github-pages environment
+    environment:
+        name: github-pages
+        url: ${{ steps.deployment.outputs.page_url }}
