@@ -87,7 +87,7 @@ body:hover {
     margin: 0;
     background-color: #12121270;
     width: fit-content;
-    padding: 10px;
+    padding: 5px;
     border: transparent 5px solid;
     border-radius: 5px;
 }
@@ -117,4 +117,19 @@ body:hover {
 .fade-in {
     opacity: 1;
     transition: opacity 2.5s ease-in-out;
+}
+
+#progress-bar {
+    display: block;
+    height: 5%;
+    width: auto;
+    border: #181c2b 5px solid;
+    border-radius: 5px;
+    padding: 0;
+}
+
+#progress-fill {
+    height: 100%;
+    width: 0%;
+    background-color: #1ed760;
 }

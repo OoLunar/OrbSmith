@@ -12,6 +12,11 @@ const pauseIcon = document.getElementById("pause-icon");
 const songTitle = document.getElementById("song-title");
 const songArtist = document.getElementById("song-artist");
 const songAlbum = document.getElementById("song-album");
+const progressBar = document.getElementById("progress-fill");
+let progressInterval;
+let progress = 0;
+let totalDurationMs = 0;
+let isPlaying = false;
 
 /**
  * Generates a secure random string using the browser crypto API.
@@ -217,6 +222,17 @@ function startApp(token) {
     });
 
     player.connect();
+    progressInterval = setInterval(updateProgressBar, 500);
+}
+
+function updateProgressBar() {
+    if(!isPlaying) {
+        // If the music is paused, don't update the progress bar
+        return;
+    }
+
+    progress += 500;
+    progressBar.style.width = `${(progress / totalDurationMs) * 100}%`;
 }
 
 /**
@@ -238,10 +254,15 @@ function updateSongInfo(state) {
             body.classList.replace("fade-out", "fade-in");
             coverArt.classList.add("paused");
             pauseIcon.style.display = "block";
+            isPlaying = false;
         } else {
             // If the music is playing, hide the pause icon and remove the grey overlay
             pauseIcon.style.display = "none";
             coverArt.classList.remove("paused");
+
+            isPlaying = true;
+            progress = state.position;
+            totalDurationMs = currentTrack.duration_ms;
 
             // If the song is just starting, fade in the cover art
             if(state.position === 0) {
