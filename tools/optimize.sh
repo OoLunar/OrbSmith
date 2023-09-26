@@ -1,15 +1,27 @@
 #!/bin/bash
-# This script is used to optimize the images and svg files in the res/ directory.
 
 # Deps
-xbps-install -Sy ImageMagick yarn > /dev/null
-yarn global add svgo
+xbps-install -Syu > /dev/null
+xbps-install -y ImageMagick yarn > /dev/null
+yarn global add svgo > /dev/null
 
-# Optimize images
-find res/ -type f -name '*.png' -exec convert {} -strip {} \;
+# Functions
+regenerate()
+{
+  echo "Generating assets for $1"
 
-# Optimize svg
-svgo res/*.svg
+  # Optimize the SVG file
+  svgo --multipass --quiet "$1"
+
+  # Convert to PNG
+  convert -background none "$1" "${1%.*}.png"
+
+  # Convert to ICO
+  # https://stackoverflow.com/a/15104985
+  convert -background transparent -define "icon:auto-resize=16,24,32,64,128,256" "$1" "${1%.*}.ico"
+}
+
+regenerate "res/logo.svg"
 
 # Check if any files were modified
 git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -17,8 +29,8 @@ git config --global user.name "github-actions[bot]"
 git add res > /dev/null
 git diff-index --quiet HEAD
 if [ "$?" == "1" ]; then
-  git commit -m "[ci-skip] Optimize resource files." > /dev/null
+  git commit -m "[ci-skip] Regenerate resource files." > /dev/null
   git push > /dev/null
 else
-  echo "No icon files were modified."
+  echo "No resource files were modified."
 fi
