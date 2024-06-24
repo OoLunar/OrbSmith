@@ -68,7 +68,7 @@ function handleError(message, clearStorage = false) {
         loginButton.style.display = "block";
     }
 
-    window.alert(message); // For debugging purposes only
+    window.alert(JSON.stringify(message)); // For debugging purposes only
     console.error(message);
 }
 
