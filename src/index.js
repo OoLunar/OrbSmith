@@ -17,6 +17,7 @@ let progressInterval;
 let progress = 0;
 let totalDurationMs = 0;
 let isPlaying = false;
+let activeApiCall = false;
 
 /**
  * Generates a secure random string using the browser crypto API.
@@ -88,7 +89,7 @@ async function login() {
     const params = new URLSearchParams({
         response_type: "code",
         client_id: clientId,
-        scope: "streaming user-read-email user-read-private",
+        scope: "streaming user-read-email user-read-private user-read-playback-state",
         redirect_uri: redirectUri,
         code_challenge_method: 'S256',
         code_challenge: codeChallenge,
@@ -166,6 +167,7 @@ async function refreshToken() {
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: params.toString()
         });
+
         const data = await response.json();
         if(data.error) {
             handleError(`Failed to refresh token: ${data.error}`, true);
@@ -188,51 +190,51 @@ async function refreshToken() {
  * @param {string} token - The access token.
  */
 function startApp(token) {
-    const player = new Spotify.Player({
-        name: "OrbSmith: Stream Overlay",
-        getOAuthToken: async cb => {
-            const tokenExpiresAt = parseInt(localStorage.getItem("token_expires_at"));
-            const currentTime = new Date().getTime();
+    loading.style.display = "none";
+    app.style.display = "grid";
 
-            if(currentTime < tokenExpiresAt - 30000) {
-                // Token is valid for more than 30 seconds, use the current token
-                cb(token);
-            } else {
-                try {
-                    // Token is about to expire, refresh it
-                    const newToken = await refreshToken();
-                    cb(newToken);
-                } catch(error) {
-                    // Handle token refresh error
-                    handleError("Failed to refresh access token.", true);
-                }
-            }
+    // Start polling for the currently playing track
+    setInterval(async () => {
+        if(activeApiCall) {
+            return;
         }
-    });
 
-    player.addListener("initialization_error", message => handleError(message, true));
-    player.addListener("authentication_error", message => handleError(message, true));
-    player.addListener("account_error", message => handleError(message));
-    player.addListener("playback_error", message => handleError(message));
-    player.addListener("player_state_changed", state => updateSongInfo(state));
-    player.addListener("not_ready", device_id => console.log("Device ID has gone offline", device_id));
-    player.addListener("ready", device_id => {
-        console.log("Ready with Device ID", device_id);
-        loading.style.display = "none";
-        app.style.display = "grid";
-    });
+        activeApiCall = true;
+        try {
+            const response = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
 
-    player.connect();
+            const data = await response.text();
+            if(data !== undefined && data !== null && data !== "") {
+                // Track is playing or paused
+                updateSongInfo(JSON.parse(data));
+            } else {
+                document.title = "OrbSmith: Not Playing";
+                coverArt.src = "res/spotify.png";
+                songTitle.innerText = "Song: Not Playing";
+                songArtist.innerText = "Artist: Not Playing";
+                songAlbum.innerText = "Album: Not Playing";
+                pauseIcon.style.display = "none";
+
+                body.classList.replace("fade-in", "fade-out");
+                coverArt.classList.remove("paused");
+
+                progress = 0;
+                totalDurationMs = 0;
+                progressBar.style.width = 0;
+            }
+        } catch(error) {
+            handleError(`Failed to get current track: ${error}`);
+        }
+
+        activeApiCall = false;
+    }, 1000);
+
     progressInterval = setInterval(updateProgressBar, 500);
 }
 
 function updateProgressBar() {
-    if(!isPlaying) {
-        // If the music is paused, don't update the progress bar
-        return;
-    }
-
-    progress += 500;
     progressBar.style.width = `${(progress / totalDurationMs) * 100}%`;
 }
 
@@ -241,8 +243,8 @@ function updateProgressBar() {
  * @param {object} state - The player state object.
  */
 function updateSongInfo(state) {
-    if(state) {
-        const { current_track: currentTrack } = state.track_window;
+    if(state && state.progress_ms !== 0) {
+        const currentTrack = state.item;
 
         document.title = `OrbSmith: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
         coverArt.src = currentTrack.album.images[0].url;
@@ -250,29 +252,26 @@ function updateSongInfo(state) {
         songArtist.innerText = `Artist: ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
         songAlbum.innerText = currentTrack.album.name !== currentTrack.name ? `Album: ${currentTrack.album.name}` : "";
 
-        if(state.paused) {
-            // If the music is paused, show the pause icon and grey out the cover art
-            body.classList.replace("fade-out", "fade-in");
-            coverArt.classList.add("paused");
-            pauseIcon.style.display = "block";
-            isPlaying = false;
-        } else {
-            // If the music is playing, hide the pause icon and remove the grey overlay
+        progress = state.progress_ms;
+        totalDurationMs = currentTrack.duration_ms;
+
+        if(state.is_playing) {
             pauseIcon.style.display = "none";
             coverArt.classList.remove("paused");
 
             isPlaying = true;
-            progress = state.position;
-            totalDurationMs = currentTrack.duration_ms;
-
-            // If the song is just starting, fade in the cover art
-            if(state.position === 0) {
+            if(state.progress_ms === 0) {
                 body.classList.replace("fade-out", "fade-in");
                 setTimeout(() => body.classList.replace("fade-in", "fade-out"), 5000);
             } else {
-                // Otherwise, fade out the cover art
                 body.classList.replace("fade-in", "fade-out");
             }
+        } else {
+            body.classList.replace("fade-out", "fade-in");
+            coverArt.classList.add("paused");
+            pauseIcon.style.display = "block";
+
+            isPlaying = false;
         }
     } else {
         document.title = "OrbSmith: Not Playing";
@@ -280,29 +279,36 @@ function updateSongInfo(state) {
         songTitle.innerText = "Song: Not Playing";
         songArtist.innerText = "Artist: Not Playing";
         songAlbum.innerText = "Album: Not Playing";
-
-        // If there is no music, hide the pause icon and remove the grey overlay
         pauseIcon.style.display = "none";
-        body.classList.replace("fade-out", "fade-in");
+
+        body.classList.replace("fade-in", "fade-out");
     }
 }
 
-window.onSpotifyWebPlaybackSDKReady = function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-    const state = urlParams.get("state");
-    if(code) {
-        startPlaying(code, state);
-    } else {
-        const cachedToken = localStorage.getItem("access_token");
-        if(cachedToken) {
-            // We have a cached token, so start the app
-            startApp(cachedToken);
+// Check for the authorization code in the URL search parameters
+const params = new URLSearchParams(window.location.search);
+const code = params.get("code");
+const state = params.get("state");
+
+// If we have the code and state, exchange the code for a token
+if(code && state) {
+    startPlaying(code, state);
+} else {
+    // Otherwise, we assume the user needs to login
+    loginButton.addEventListener("click", login);
+
+    const token = localStorage.getItem("access_token");
+    if(token) {
+        const tokenExpiresAt = parseInt(localStorage.getItem("token_expires_at"));
+        const currentTime = new Date().getTime();
+        if(currentTime < tokenExpiresAt - 30000) {
+            startApp(token);
         } else {
-            // We don't have an authorization code, so show the login button
-            loginButton.addEventListener("click", login);
-            loading.style.display = "none";
-            loginButton.style.display = "block";
+            refreshToken().then(startApp);
         }
+    } else {
+        loading.style.display = "none";
+        app.style.display = "none";
+        loginButton.style.display = "block";
     }
-};
+}

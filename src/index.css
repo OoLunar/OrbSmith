@@ -99,14 +99,14 @@ body:hover {
 #spotify-logo {
     width: 32px;
     height: 32px;
-    margin: 20px;
+    margin: 25px;
     position: absolute;
-    bottom: 0;
-    right: 0;
+    top: 0;
+    left: 0;
     background-color: #12121270;
-    padding: 2px;
+    padding: 0.5px;
     border: transparent 5px solid;
-    border-radius: 5px;
+    border-radius: 50%;
 }
 
 .fade-out {
