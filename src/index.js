@@ -234,6 +234,9 @@ function startApp(token) {
     progressInterval = setInterval(updateProgressBar, 500);
 }
 
+/**
+ * Updates the progress bar based on the current track's progress.
+ */
 function updateProgressBar() {
     progressBar.style.width = `${(progress / totalDurationMs) * 100}%`;
 }
@@ -243,37 +246,8 @@ function updateProgressBar() {
  * @param {object} state - The player state object.
  */
 function updateSongInfo(state) {
-    if(state && state.progress_ms !== 0) {
-        const currentTrack = state.item;
-
-        document.title = `OrbSmith: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
-        coverArt.src = currentTrack.album.images[0].url;
-        songTitle.innerText = `Song: ${currentTrack.name}`;
-        songArtist.innerText = `Artist: ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
-        songAlbum.innerText = currentTrack.album.name !== currentTrack.name ? `Album: ${currentTrack.album.name}` : "";
-
-        progress = state.progress_ms;
-        totalDurationMs = currentTrack.duration_ms;
-
-        if(state.is_playing) {
-            pauseIcon.style.display = "none";
-            coverArt.classList.remove("paused");
-
-            isPlaying = true;
-            if(state.progress_ms === 0) {
-                body.classList.replace("fade-out", "fade-in");
-                setTimeout(() => body.classList.replace("fade-in", "fade-out"), 5000);
-            } else {
-                body.classList.replace("fade-in", "fade-out");
-            }
-        } else {
-            body.classList.replace("fade-out", "fade-in");
-            coverArt.classList.add("paused");
-            pauseIcon.style.display = "block";
-
-            isPlaying = false;
-        }
-    } else {
+    // If there's no song playing, show the not playing cover and fade out after 10 seconds
+    if(!state || state.progress_ms == 0) {
         document.title = "OrbSmith: Not Playing";
         coverArt.src = "res/spotify.png";
         songTitle.innerText = "Song: Not Playing";
@@ -281,8 +255,58 @@ function updateSongInfo(state) {
         songAlbum.innerText = "Album: Not Playing";
         pauseIcon.style.display = "none";
 
-        body.classList.replace("fade-in", "fade-out");
+        setTimeout(() => {
+            if(!isPlaying) {
+                body.classList.replace("fade-in", "fade-out");
+            }
+        }, 10000);
     }
+
+    // If there is a song playing, check to see if the song has changed
+    // If it has, fade it in and fade it out after 10 seconds
+    const currentTrack = state.item;
+    const titleName = `OrbSmith: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
+    if(document.title !== titleName) {
+        body.classList.replace("fade-out", "fade-in");
+        setTimeout(() => {
+            if(isPlaying) {
+                body.classList.replace("fade-in", "fade-out");
+            }
+        }, 10000);
+    }
+
+    // Change the song information
+    document.title = titleName;
+    coverArt.src = currentTrack.album.images[0].url;
+    songTitle.innerText = `Song: ${currentTrack.name}`;
+    songArtist.innerText = `Artist: ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
+    songAlbum.innerText = currentTrack.album.name !== currentTrack.name ? `Album: ${currentTrack.album.name}` : "";
+
+    // Change the progress bar
+    progress = state.progress_ms;
+    totalDurationMs = currentTrack.duration_ms;
+
+    // If the song is paused, show the pause icon
+    // The information should ALWAYS show when paused
+    // so the viewers can yell at the streamer to unpause
+    if(!state.is_playing) {
+        coverArt.classList.add("paused");
+        pauseIcon.style.display = "block";
+        body.classList.replace("fade-out", "fade-in");
+
+        isPlaying = false;
+        return;
+    }
+
+    // If the song was unpaused, hide the pause icon and fade out after 10 seconds
+    pauseIcon.style.display = "none";
+    coverArt.classList.remove("paused");
+    isPlaying = true;
+    setTimeout(() => {
+        if(isPlaying) {
+            body.classList.replace("fade-in", "fade-out");
+        }
+    }, 10000);
 }
 
 // Check for the authorization code in the URL search parameters
