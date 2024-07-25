@@ -82,8 +82,19 @@ function handleError(message, clearStorage = false) {
     console.error(message);
 }
 
-function changePlayerState() {
+let fadingIn = false;
+function showPlayer(fadeIn) {
+    // If the fade is the same as the last fade, return without resetting the timestamp
+    if(fadingIn === fadeIn) {
+        return;
+    }
 
+    fadingIn = fadeIn;
+    if(fadeIn) {
+        body.classList.replace("fade-out", "fade-in");
+    } else {
+        body.classList.replace("fade-in", "fade-out");
+    }
 }
 
 /**
@@ -230,7 +241,7 @@ function startApp(token) {
                 songAlbum.innerText = "Album: Not Playing";
                 pauseIcon.style.display = "none";
 
-                body.classList.replace("fade-in", "fade-out");
+                showPlayer(false);
                 coverArt.classList.remove("paused");
 
                 progress = 0;
@@ -270,9 +281,9 @@ function updateSongInfo(state) {
 
         setTimeout(() => {
             if(!isPlaying) {
-                body.classList.replace("fade-in", "fade-out");
+                showPlayer(false);
             }
-        }, 10000);
+        }, 15000);
     }
 
     // If there is a song playing, check to see if the song has changed
@@ -280,12 +291,12 @@ function updateSongInfo(state) {
     const currentTrack = state.item;
     const titleName = `OrbSmith: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
     if(document.title !== titleName) {
-        body.classList.replace("fade-out", "fade-in");
+        showPlayer(true);
         setTimeout(() => {
             if(isPlaying) {
-                body.classList.replace("fade-in", "fade-out");
+                showPlayer(false);
             }
-        }, 10000);
+        }, 15000);
     }
 
     // Change the song information
@@ -305,7 +316,7 @@ function updateSongInfo(state) {
     if(!state.is_playing) {
         coverArt.classList.add("paused");
         pauseIcon.style.display = "block";
-        body.classList.replace("fade-out", "fade-in");
+        showPlayer(true);
 
         isPlaying = false;
         return;
@@ -317,9 +328,9 @@ function updateSongInfo(state) {
     isPlaying = true;
     setTimeout(() => {
         if(isPlaying) {
-            body.classList.replace("fade-in", "fade-out");
+            showPlayer(false);
         }
-    }, 10000);
+    }, 15000);
 }
 
 // Check for the authorization code in the URL search parameters
