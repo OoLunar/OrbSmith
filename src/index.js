@@ -18,6 +18,7 @@ let progress = 0;
 let totalDurationMs = 0;
 let isPlaying = false;
 let activeApiCall = false;
+let lastError = null;
 
 /**
  * Generates a secure random string using the browser crypto API.
@@ -69,8 +70,20 @@ function handleError(message, clearStorage = false) {
         loginButton.style.display = "block";
     }
 
+    // If the error repeats multiple times, reload the window
+    if(lastError === message) {
+        // Reload window
+        window.location.reload();
+        return;
+    }
+
+    lastError = message;
     window.alert(JSON.stringify(message)); // For debugging purposes only
     console.error(message);
+}
+
+function changePlayerState() {
+
 }
 
 /**
