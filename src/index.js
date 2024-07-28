@@ -82,18 +82,34 @@ function handleError(message, clearStorage = false) {
     console.error(message);
 }
 
-let fadingIn = false;
-function showPlayer(fadeIn) {
-    // If the fade is the same as the last fade, return without resetting the timestamp
-    if(fadingIn === fadeIn) {
-        return;
-    }
+// Global variables for fade durations
+const FADE_DURATION = 2500; // Duration of the fade transition in milliseconds
+const FADE_OUT_DELAY = 15000; // Delay before starting the fade-out in milliseconds
 
-    fadingIn = fadeIn;
+let fadeTimeout;
+let fadeState = 'hidden'; // can be 'hidden', 'fadingIn', 'visible', 'fadingOut'
+
+function showPlayer(fadeIn) {
     if(fadeIn) {
-        body.classList.replace("fade-out", "fade-in");
+        if(fadeState === 'visible' || fadeState === 'fadingIn') {
+            return;
+        }
+
+        fadeState = 'fadingIn';
+        clearTimeout(fadeTimeout);
+        body.classList.remove("fade-out");
+        body.classList.add("fade-in");
+        fadeTimeout = setTimeout(() => fadeState = 'visible', FADE_DURATION); // Use the global FADE_DURATION variable
     } else {
-        body.classList.replace("fade-in", "fade-out");
+        if(fadeState === 'hidden' || fadeState === 'fadingOut') {
+            return;
+        }
+
+        fadeState = 'fadingOut';
+        clearTimeout(fadeTimeout);
+        body.classList.remove("fade-in");
+        body.classList.add("fade-out");
+        fadeTimeout = setTimeout(() => fadeState = 'hidden', FADE_DURATION + FADE_OUT_DELAY); // Use the global FADE_DURATION and FADE_OUT_DELAY variables
     }
 }
 
@@ -279,11 +295,13 @@ function updateSongInfo(state) {
         songAlbum.innerText = "Album: Not Playing";
         pauseIcon.style.display = "none";
 
-        setTimeout(() => {
+        clearTimeout(fadeTimeout);
+        fadeTimeout = setTimeout(() => {
             if(!isPlaying) {
                 showPlayer(false);
             }
-        }, 15000);
+        }, FADE_OUT_DELAY);
+        return;
     }
 
     // If there is a song playing, check to see if the song has changed
@@ -292,11 +310,12 @@ function updateSongInfo(state) {
     const titleName = `OrbSmith: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
     if(document.title !== titleName) {
         showPlayer(true);
-        setTimeout(() => {
+        clearTimeout(fadeTimeout);
+        fadeTimeout = setTimeout(() => {
             if(isPlaying) {
                 showPlayer(false);
             }
-        }, 15000);
+        }, FADE_OUT_DELAY);
     }
 
     // Change the song information
@@ -326,11 +345,12 @@ function updateSongInfo(state) {
     pauseIcon.style.display = "none";
     coverArt.classList.remove("paused");
     isPlaying = true;
-    setTimeout(() => {
+    clearTimeout(fadeTimeout);
+    fadeTimeout = setTimeout(() => {
         if(isPlaying) {
             showPlayer(false);
         }
-    }, 15000);
+    }, FADE_OUT_DELAY);
 }
 
 // Check for the authorization code in the URL search parameters
@@ -340,6 +360,16 @@ const state = params.get("state");
 
 // If we have the code and state, exchange the code for a token
 if(code && state) {
+    app.addEventListener('mouseenter', () => showPlayer(true));
+    app.addEventListener('mouseleave', () => {
+        if(isPlaying) {
+            clearTimeout(fadeTimeout);
+            fadeTimeout = setTimeout(() => {
+                showPlayer(false);
+            }, FADE_OUT_DELAY); // Use the global FADE_OUT_DELAY variable
+        }
+    });
+
     startPlaying(code, state);
 } else {
     // Otherwise, we assume the user needs to login
