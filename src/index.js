@@ -270,6 +270,9 @@ function startApp(token) {
         activeApiCall = false;
     }, 1000);
 
+    // Refresh the token every hour
+    setInterval(refreshToken, 3600000);
+
     progressInterval = setInterval(updateProgressBar, 500);
 }
 
