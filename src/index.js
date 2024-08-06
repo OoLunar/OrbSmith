@@ -78,7 +78,6 @@ function handleError(message, clearStorage = false) {
     }
 
     lastError = message;
-    window.alert(JSON.stringify(message)); // For debugging purposes only
     console.error(message);
 }
 
