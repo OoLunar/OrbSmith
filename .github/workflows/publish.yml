@@ -14,11 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Optimize Images
-        run: tools/optimize.sh
       - name: Prepare Files
         run: mkdir build && mv src/* res/ build/
       - name: Upload GitHub Pages artifact
@@ -35,7 +33,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
     # Deploy to the github-pages environment
     environment:
         name: github-pages
