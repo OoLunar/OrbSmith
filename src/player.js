@@ -28,7 +28,9 @@ class Player {
 
     onSongChange() {
         this.showSongInfo();
-        setTimeout(() => this.updateVisibility(), this.transitionTime);
+
+        // Check visibility after song changes
+        this.updateVisibility();
     }
 
     showSongInfo() {
@@ -38,11 +40,18 @@ class Player {
 
     hideSongInfo() {
         clearTimeout(this.currentTransitionTimeout);
-        this.currentTransitionTimeout = setTimeout(() => this.songInfo.classList.remove('visible'), this.transitionTime);
+
+        // Start fade-out only after transition time if not paused or hovered
+        this.currentTransitionTimeout = setTimeout(() => {
+            if(!this.isHovered && !this.isSongPaused) {
+                this.songInfo.classList.remove('visible');
+            }
+        }, this.transitionTime);
     }
 
     updateVisibility() {
-        if(this.isSongPaused || this.isHovered) {
+        // Always keep song info visible if hovered or paused
+        if(this.isHovered || this.isSongPaused) {
             this.showSongInfo();
         } else {
             this.hideSongInfo();
