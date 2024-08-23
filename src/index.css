@@ -6,13 +6,16 @@ html {
     overflow: hidden;
     padding: 0;
     width: 900px;
+    /* General opacity transition */
     transition: opacity 2.5s ease-in-out;
+    /* Default opacity */
     opacity: 1;
 }
 
 html:hover,
 body:hover {
     transition: opacity 2.5s ease-in-out;
+    /* Hover keeps opacity at full */
     opacity: 1;
 }
 
@@ -29,6 +32,7 @@ body:hover {
     border: #181c2b 5px solid;
     border-radius: 5px;
     margin: 20px;
+    /* Opacity transition for cover art */
     transition: opacity 0.5s ease-out;
     width: calc(100% - 60px);
 }
@@ -70,6 +74,7 @@ body:hover {
 }
 
 .paused {
+    /* Cover art opacity when paused */
     opacity: 0.3;
 }
 
@@ -81,6 +86,15 @@ body:hover {
     justify-content: space-around;
     overflow: hidden;
     padding: 10px;
+    /* Hidden by default */
+    opacity: 0;
+    /* Smooth transition for song-info visibility */
+    transition: opacity 2.5s ease-in-out;
+}
+
+#song-info.visible {
+    /* Visibility handled by JS via .visible class */
+    opacity: 1;
 }
 
 #song-info>* {
@@ -107,16 +121,6 @@ body:hover {
     padding: 0.5px;
     border: transparent 5px solid;
     border-radius: 50%;
-}
-
-.fade-out {
-    opacity: 0;
-    transition: opacity 2.5s ease-in-out 15s;
-}
-
-.fade-in {
-    opacity: 1;
-    transition: opacity 2.5s ease-in-out;
 }
 
 #progress-bar {
