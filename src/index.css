@@ -25,6 +25,15 @@ body:hover {
     height: 100%;
     max-height: 100%;
     width: 100%;
+    /* Hidden by default */
+    opacity: 0;
+    /* Smooth transition for song-info visibility */
+    transition: opacity 2.5s ease-in-out;
+}
+
+#app.visible {
+    /* Visibility handled by JS via .visible class */
+    opacity: 1;
 }
 
 #cover-art {
@@ -86,15 +95,6 @@ body:hover {
     justify-content: space-around;
     overflow: hidden;
     padding: 10px;
-    /* Hidden by default */
-    opacity: 0;
-    /* Smooth transition for song-info visibility */
-    transition: opacity 2.5s ease-in-out;
-}
-
-#song-info.visible {
-    /* Visibility handled by JS via .visible class */
-    opacity: 1;
 }
 
 #song-info>* {

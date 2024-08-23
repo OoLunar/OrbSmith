@@ -13,7 +13,7 @@ const songTitle = document.getElementById("song-title");
 const songArtist = document.getElementById("song-artist");
 const songAlbum = document.getElementById("song-album");
 const progressBar = document.getElementById("progress-fill");
-const player = new Player(document.getElementById("song-info"));
+const player = new Player(document.getElementById("app"));
 let progressInterval;
 let progress = 0;
 let totalDurationMs = 0;
