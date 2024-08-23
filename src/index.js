@@ -18,6 +18,7 @@ let progressInterval;
 let progress = 0;
 let totalDurationMs = 0;
 let activeApiCall = false;
+let lastError = null;
 
 /**
  * Initiates the login process.
@@ -167,7 +168,7 @@ function startApp(token) {
                 songAlbum.innerText = "Album: Not Playing";
                 pauseIcon.style.display = "none";
 
-                body.classList.replace("fade-in", "fade-out");
+                showPlayer(false);
                 coverArt.classList.remove("paused");
 
                 progress = 0;
@@ -180,6 +181,9 @@ function startApp(token) {
 
         activeApiCall = false;
     }, 1000);
+
+    // Refresh the token every hour
+    setInterval(refreshToken, 3600000);
 
     progressInterval = setInterval(updateProgressBar, 500);
 }
@@ -236,6 +240,16 @@ const state = params.get("state");
 
 // If we have the code and state, exchange the code for a token
 if(code && state) {
+    app.addEventListener('mouseenter', () => showPlayer(true));
+    app.addEventListener('mouseleave', () => {
+        if(isPlaying) {
+            clearTimeout(fadeTimeout);
+            fadeTimeout = setTimeout(() => {
+                showPlayer(false);
+            }, FADE_OUT_DELAY); // Use the global FADE_OUT_DELAY variable
+        }
+    });
+
     startPlaying(code, state);
 } else {
     // Otherwise, we assume the user needs to login

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Deps
-apt-get update > /dev/null
-apt-get install -y imagemagick yarn > /dev/null
+sudo apt-get update > /dev/null
+sudo apt-get install -y imagemagick yarn > /dev/null
 yarn global add svgo > /dev/null
 
 # Functions
