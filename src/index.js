@@ -239,23 +239,22 @@ const state = params.get("state");
 if(code && state) {
     player.showSongInfo(true);
     startPlaying(code, state);
-    return;
-}
-
-// Otherwise, we assume the user needs to login
-loginButton.addEventListener("click", login);
-
-const token = localStorage.getItem("access_token");
-if(token) {
-    const tokenExpiresAt = parseInt(localStorage.getItem("token_expires_at"));
-    const currentTime = new Date().getTime();
-    if(currentTime < tokenExpiresAt - 30000) {
-        startApp(token);
-    } else {
-        refreshToken().then(startApp);
-    }
 } else {
-    loading.style.display = "none";
-    app.style.display = "none";
-    loginButton.style.display = "block";
+    // Otherwise, we assume the user needs to login
+    loginButton.addEventListener("click", login);
+
+    const token = localStorage.getItem("access_token");
+    if(token) {
+        const tokenExpiresAt = parseInt(localStorage.getItem("token_expires_at"));
+        const currentTime = new Date().getTime();
+        if(currentTime < tokenExpiresAt - 30000) {
+            startApp(token);
+        } else {
+            refreshToken().then(startApp);
+        }
+    } else {
+        loading.style.display = "none";
+        app.style.display = "none";
+        loginButton.style.display = "block";
+    }
 }
