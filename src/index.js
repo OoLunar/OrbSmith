@@ -223,14 +223,14 @@ function updateSongInfo(state) {
         coverArt.classList.add("paused");
         pauseIcon.style.display = "block";
         body.classList.replace("fade-out", "fade-in");
-        player.onSongPause(); // Trigger permanent visibility for song-info on pause
+        player.pauseSong(true); // Trigger permanent visibility for song-info on pause
         return;
     }
 
     // If the song is unpaused
     pauseIcon.style.display = "none";
     coverArt.classList.remove("paused");
-    player.onSongUnpause(); // Trigger hide for song-info after unpause
+    player.pauseSong(false); // Trigger hide for song-info after unpause
 }
 
 // Check for the authorization code in the URL search parameters
