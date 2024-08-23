@@ -167,8 +167,6 @@ function startApp(token) {
                 songArtist.innerText = "Artist: Not Playing";
                 songAlbum.innerText = "Album: Not Playing";
                 pauseIcon.style.display = "none";
-
-                player.showSongInfo(false);
                 coverArt.classList.remove("paused");
 
                 progress = 0;
@@ -200,6 +198,7 @@ function updateSongInfo(state) {
     const currentTrack = state.item;
     const titleName = `OrbSmith: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
 
+    // If the song changed, show the song information
     if(document.title !== titleName) {
         player.showSongInfo(true);
     }
