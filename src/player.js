@@ -13,19 +13,12 @@ class Player {
 
     onHover(isHovered) {
         this.isHovered = isHovered;
-        this.updateVisibility();
+        this.showSongInfo(this.isHovered);
     }
 
     pauseSong(isPaused) {
         this.isSongPaused = isPaused;
         this.showSongInfo(true);
-    }
-
-    onSongChange() {
-        this.showSongInfo(true);
-
-        // Check visibility after song changes
-        this.updateVisibility();
     }
 
     showSongInfo(visible) {
@@ -40,10 +33,5 @@ class Player {
                 this.songInfo.classList.remove('visible');
             }
         }, this.transitionTime);
-    }
-
-    updateVisibility() {
-        // Always keep song info visible if hovered or paused
-        this.showSongInfo(this.isHovered || this.isSongPaused);
     }
 }

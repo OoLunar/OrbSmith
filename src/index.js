@@ -204,7 +204,7 @@ function updateSongInfo(state) {
     const titleName = `OrbSmith: ${currentTrack.name} - ${currentTrack.artists.map(artist => artist.name).join(", ")}`;
 
     if(document.title !== titleName) {
-        player.onSongChange(); // Trigger appearance of song-info when song changes
+        player.showSongInfo(true);
     }
 
     // Change the song information
