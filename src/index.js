@@ -177,13 +177,10 @@ function startApp(token) {
             }
         } catch(error) {
             handleError(`Failed to get current track: ${error}`);
+        } finally {
+            activeApiCall = false;
         }
-
-        activeApiCall = false;
     }, 1000);
-
-    // Refresh the token every hour
-    setInterval(refreshToken, 3600000);
 
     progressInterval = setInterval(updateProgressBar, 500);
 }
@@ -240,33 +237,25 @@ const state = params.get("state");
 
 // If we have the code and state, exchange the code for a token
 if(code && state) {
-    app.addEventListener('mouseenter', () => showPlayer(true));
-    app.addEventListener('mouseleave', () => {
-        if(isPlaying) {
-            clearTimeout(fadeTimeout);
-            fadeTimeout = setTimeout(() => {
-                showPlayer(false);
-            }, FADE_OUT_DELAY); // Use the global FADE_OUT_DELAY variable
-        }
-    });
-
+    player.showSongInfo(true);
     startPlaying(code, state);
-} else {
-    // Otherwise, we assume the user needs to login
-    loginButton.addEventListener("click", login);
+    return;
+}
 
-    const token = localStorage.getItem("access_token");
-    if(token) {
-        const tokenExpiresAt = parseInt(localStorage.getItem("token_expires_at"));
-        const currentTime = new Date().getTime();
-        if(currentTime < tokenExpiresAt - 30000) {
-            startApp(token);
-        } else {
-            refreshToken().then(startApp);
-        }
+// Otherwise, we assume the user needs to login
+loginButton.addEventListener("click", login);
+
+const token = localStorage.getItem("access_token");
+if(token) {
+    const tokenExpiresAt = parseInt(localStorage.getItem("token_expires_at"));
+    const currentTime = new Date().getTime();
+    if(currentTime < tokenExpiresAt - 30000) {
+        startApp(token);
     } else {
-        loading.style.display = "none";
-        app.style.display = "none";
-        loginButton.style.display = "block";
+        refreshToken().then(startApp);
     }
+} else {
+    loading.style.display = "none";
+    app.style.display = "none";
+    loginButton.style.display = "block";
 }
