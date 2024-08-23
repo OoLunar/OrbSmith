@@ -49,6 +49,45 @@ async function login() {
 }
 
 /**
+ * Refreshes the access token using the refresh token.
+ * @returns {Promise<string>} A promise that resolves to the new access token.
+ */
+async function refreshToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    const params = new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: clientId
+    });
+
+    try {
+        const response = await fetch("https://accounts.spotify.com/api/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString()
+        });
+
+        const data = await response.json();
+        if(data.error) {
+            handleError(`Failed to refresh token: ${data.error}`, true);
+            throw new Error(`Failed to refresh token: ${data.error}`);
+        }
+
+        // Update the token information in localStorage
+        localStorage.setItem("access_token", data.access_token);
+
+        // Call refreshToken() after the token expires
+        setInterval(() => refreshToken(), data.expires_in * 1000);
+
+        // Return the new access token
+        return data.access_token;
+    } catch(error) {
+        handleError(`Failed to refresh token: ${error}`, true);
+        throw error;
+    }
+}
+
+/**
  * Initiates playing after receiving the authorization code.
  * @param {string} code - The authorization code.
  * @param {string} state - The state value.
@@ -98,45 +137,6 @@ function startPlaying(code, state) {
 }
 
 /**
- * Refreshes the access token using the refresh token.
- * @returns {Promise<string>} A promise that resolves to the new access token.
- */
-async function refreshToken() {
-    const refreshToken = localStorage.getItem("refresh_token");
-    const params = new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
-        client_id: clientId
-    });
-
-    try {
-        const response = await fetch("https://accounts.spotify.com/api/token", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: params.toString()
-        });
-
-        const data = await response.json();
-        if(data.error) {
-            handleError(`Failed to refresh token: ${data.error}`, true);
-            throw new Error(`Failed to refresh token: ${data.error}`);
-        }
-
-        // Update the token information in localStorage
-        localStorage.setItem("access_token", data.access_token);
-
-        // Call refreshToken() after the token expires
-        setInterval(() => refreshToken(), data.expires_in * 1000);
-
-        // Return the new access token
-        return data.access_token;
-    } catch(error) {
-        handleError(`Failed to refresh token: ${error}`, true);
-        throw error;
-    }
-}
-
-/**
  * Initializes the Spotify player.
  * @param {string} token - The access token.
  */
@@ -168,7 +168,7 @@ function startApp(token) {
                 songAlbum.innerText = "Album: Not Playing";
                 pauseIcon.style.display = "none";
 
-                showPlayer(false);
+                player.showSongInfo(false);
                 coverArt.classList.remove("paused");
 
                 progress = 0;
